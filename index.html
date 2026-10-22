@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#4f46e5">
+<meta name="description" content="TareaLista: organiza tus tareas, programa fechas de vencimiento y recibe recordatorios con sonido y vibración desde el navegador o el celular.">
+<title>TareaLista — Gestor de Tareas y Recordatorios</title>
+<style>
+  :root{
+    --primario:#4f46e5;
+    --primario-claro:#6366f1;
+    --primario-oscuro:#4338ca;
+    --tarjeta:#ffffff;
+    --texto:#0f172a;
+    --texto-suave:#64748b;
+    --borde:#e2e8f0;
+    --exito:#10b981;
+    --peligro:#ef4444;
+    --advertencia:#f59e0b;
+    --radio:16px;
+    --sombra:0 4px 24px rgba(15,23,42,.08);
+  }
+
+  *{margin:0;padding:0;box-sizing:border-box;}
+
+  body{
+    font-family:"Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
+    background:
+      radial-gradient(1000px 500px at 8% -10%, #e0e7ff 0%, transparent 60%),
+      radial-gradient(900px 520px at 110% 5%, #cffafe 0%, transparent 55%),
+      #f6f8fc;
+    background-attachment:fixed;
+    color:var(--texto);
+    line-height:1.5;
+    min-height:100vh;
+    padding:28px 16px 90px;
+    -webkit-tap-highlight-color:transparent;
+  }
+
+  .contenedor{max-width:880px;margin:0 auto;}
+
+  /* ---------- ENCABEZADO ---------- */
+  .encabezado{
+    display:flex;align-items:center;justify-content:space-between;
+    gap:16px;flex-wrap:wrap;margin-bottom:22px;
+  }
+  .marca{display:flex;align-items:center;gap:13px;}
+  .logo{
+    width:50px;height:50px;border-radius:15px;
+    background:linear-gradient(135deg,#6366f1,#0ea5e9);
+    display:grid;place-items:center;font-size:1.5rem;
+    box-shadow:0 8px 20px rgba(79,70,229,.35);
+    flex:0 0 auto;
+  }
+  .marca h1{
+    font-size:1.5rem;font-weight:800;letter-spacing:-.6px;line-height:1.15;
+    background:linear-gradient(135deg,#4f46e5,#0ea5e9);
+    -webkit-background-clip:text;background-clip:text;
+    -webkit-text-fill-color:transparent;
+  }
+  .marca p{font-size:.83rem;color:var(--texto-suave);}
+
+  /* ---------- BOTONES ---------- */
+  .boton{
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    padding:11px 18px;border-radius:10px;border:none;cursor:pointer;
+    font-size:.92rem;font-weight:700;font-family:inherit;
+    transition:transform .18s, box-shadow .18s, background .18s, color .18s;
+    white-space:nowrap;
+  }
+  .boton:active{transform:scale(.97);}
+  .boton-primario{
+    background:linear-gradient(135deg,#6366f1,#4f46e5);
+    color:#fff;box-shadow:0 6px 16px rgba(79,70,229,.32);
+  }
+  .boton-primario:hover{transform:translateY(-1px);box-shadow:0 10px 22px rgba(79,70,229,.4);}
+  .boton-secundario{background:#eef2ff;color:var(--primario-oscuro);}
+  .boton-secundario:hover{background:#e0e7ff;}
+  .boton-secundario.activo{background:#dcfce7;color:#15803d;}
+  .boton-secundario.bloqueado{background:#fee2e2;color:#b91c1c;}
+
+  /* ---------- TARJETAS ---------- */
+  .tarjeta{
+    background:var(--tarjeta);
+    border:1px solid var(--borde);
+    border-radius:var(--radio);
+    box-shadow:var(--sombra);
+    padding:20px;
+    margin-bottom:18px;
+  }
+  .tarjeta-titulo{
+    font-size:.78rem;font-weight:800;letter-spacing:.8px;
+    text-transform:uppercase;color:var(--texto-suave);margin-bottom:14px;
+  }
+
+  /* ---------- FORMULARIO ---------- */
+  .formulario{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;}
+  .campo{display:flex;flex-direction:column;gap:6px;min-width:0;}
+  .campo-ancho{grid-column:1 / -1;}
+  .campo label{
+    font-size:.72rem;font-weight:800;letter-spacing:.7px;
+    text-transform:uppercase;color:var(--texto-suave);
+  }
+  .campo input,.campo select,.campo textarea{
+    width:100%;padding:11px 13px;
+    border:1.5px solid var(--borde);border-radius:10px;
+    font-size:.94rem;font-family:inherit;color:var(--texto);
+    background:#f8fafc;transition:.18s;
+  }
+  .campo textarea{resize:vertical;min-height:62px;}
+  .campo input:focus,.campo select:focus,.campo textarea:focus{
+    outline:none;border-color:var(--primario-claro);background:#fff;
+    box-shadow:0 0 0 4px rgba(99,102,241,.13);
+  }
+  .acciones-formulario{
+    flex-direction:row;justify-content:flex-end;gap:10px;flex-wrap:wrap;
+  }
+  .oculto{display:none !important;}
+
+  /* ---------- ESTADÍSTICAS ---------- */
+  .estadisticas{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px;}
+  .stat{
+    background:#fff;border:1px solid var(--borde);border-radius:14px;
+    padding:14px 10px;text-align:center;
+    box-shadow:0 2px 10px rgba(15,23,42,.05);
+  }
+  .stat strong{display:block;font-size:1.5rem;font-weight:800;letter-spacing:-.6px;line-height:1.2;}
+  .stat span{
+    font-size:.68rem;text-transform:uppercase;letter-spacing:.6px;
+    color:var(--texto-suave);font-weight:800;
+  }
+  #stat-total{color:var(--texto);}
+  #stat-pendientes{color:var(--primario);}
+  #stat-vencidas{color:var(--peligro);}
+  #stat-completadas{color:var(--exito);}
+
+  /* ---------- FILTROS ---------- */
+  .filtros{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
+  .filtro{
+    padding:8px 16px;border-radius:999px;
+    border:1.5px solid var(--borde);background:#fff;
+    color:var(--texto-suave);font-weight:700;font-size:.84rem;
+    cursor:pointer;transition:.18s;font-family:inherit;
+  }
+  .filtro:hover{border-color:#c7d2fe;color:var(--primario-oscuro);}
+  .filtro.activo{
+    background:var(--primario);border-color:var(--primario);color:#fff;
+    box-shadow:0 6px 16px rgba(79,70,229,.3);
+  }
+
+  /* ---------- LISTA DE TAREAS ---------- */
+  .tarea{
+    display:flex;gap:14px;align-items:flex-start;
+    background:#fff;border:1px solid var(--borde);
+    border-left:5px solid #cbd5e1;border-radius:14px;
+    padding:16px;margin-bottom:12px;
+    box-shadow:0 2px 10px rgba(15,23,42,.05);
+    transition:box-shadow .2s, transform .2s, opacity .2s;
+    animation:aparecer .25s ease;
+  }
+  .tarea:hover{box-shadow:0 8px 22px rgba(15,23,42,.1);transform:translateY(-1px);}
+  @keyframes aparecer{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+
+  .tarea.prioridad-alta{border-left-color:var(--peligro);}
+  .tarea.prioridad-media{border-left-color:var(--advertencia);}
+  .tarea.prioridad-baja{border-left-color:var(--exito);}
+
+  .tarea.completada{opacity:.62;background:#f8fafc;}
+  .tarea.completada .tarea-titulo{text-decoration:line-through;color:var(--texto-suave);}
+
+  .boton-check{
+    flex:0 0 auto;width:26px;height:26px;margin-top:2px;
+    border-radius:50%;border:2px solid #cbd5e1;background:#fff;
+    cursor:pointer;display:grid;place-items:center;
+    color:#fff;font-size:.85rem;font-weight:900;line-height:1;
+    transition:.18s;
+  }
+  .boton-check:hover{border-color:var(--primario);background:#eef2ff;}
+  .tarea.completada .boton-check{background:var(--exito);border-color:var(--exito);}
+
+  .tarea-cuerpo{flex:1 1 auto;min-width:0;}
+  .tarea-titulo{font-size:1rem;font-weight:700;word-break:break-word;}
+  .tarea-descripcion{
+    font-size:.87rem;color:var(--texto-suave);margin-top:3px;
+    word-break:break-word;white-space:pre-wrap;
+  }
+  .tarea-meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px;}
+  .etiqueta{
+    font-size:.71rem;font-weight:700;padding:3px 9px;border-radius:999px;
+    background:#f1f5f9;color:var(--texto-suave);white-space:nowrap;
+  }
+  .etiqueta-fecha{background:#eef2ff;color:#4338ca;}
+  .etiqueta-relativa{background:#f0fdfa;color:#0f766e;}
+  .etiqueta-vencida{background:#fee2e2;color:#b91c1c;}
+  .p-alta{background:#fee2e2;color:#b91c1c;}
+  .p-media{background:#fef3c7;color:#b45309;}
+  .p-baja{background:#dcfce7;color:#15803d;}
+
+  .tarea-acciones{display:flex;gap:4px;flex:0 0 auto;}
+  .boton-icono{
+    width:34px;height:34px;border-radius:9px;border:none;
+    background:transparent;cursor:pointer;font-size:.95rem;
+    display:grid;place-items:center;transition:.15s;
+  }
+  .boton-icono:hover{background:#f1f5f9;}
+
+  /* ---------- ESTADO VACÍO ---------- */
+  .vacio{
+    text-align:center;padding:48px 20px;color:var(--texto-suave);
+    background:#fff;border:1px dashed var(--borde);border-radius:var(--radio);
+  }
+  .vacio-icono{font-size:2.6rem;margin-bottom:8px;}
+  .vacio p{font-size:.92rem;}
+
+  /* ---------- AVISOS FLOTANTES ---------- */
+  .avisos{
+    position:fixed;right:18px;bottom:18px;z-index:1000;
+    display:flex;flex-direction:column;gap:10px;max-width:340px;
+  }
+  .aviso{
+    background:#0f172a;color:#fff;padding:14px 16px;border-radius:12px;
+    box-shadow:0 14px 34px rgba(0,0,0,.32);
+    display:flex;flex-direction:column;gap:3px;cursor:pointer;
+    border-left:4px solid var(--advertencia);
+    animation:entrar .3s ease;
+  }
+  .aviso strong{font-size:.9rem;}
+  .aviso span{font-size:.8rem;opacity:.85;}
+  .aviso.saliendo{animation:salir .35s ease forwards;}
+  @keyframes entrar{from{opacity:0;transform:translateX(40px);}to{opacity:1;transform:none;}}
+  @keyframes salir{to{opacity:0;transform:translateX(40px);}}
+
+  /* ---------- PIE DE PÁGINA ---------- */
+  .pie{
+    text-align:center;margin-top:26px;padding:18px 10px;
+    font-size:.8rem;color:var(--texto-suave);
+  }
+  .pie strong{
+    font-weight:800;
+    background:linear-gradient(135deg,#4f46e5,#0ea5e9);
+    -webkit-background-clip:text;background-clip:text;
+    -webkit-text-fill-color:transparent;
+  }
+
+  /* ---------- RESPONSIVE ---------- */
+  @media (max-width:640px){
+    body{padding:18px 12px 100px;}
+    .formulario{grid-template-columns:1fr;}
+    .estadisticas{grid-template-columns:repeat(2,1fr);}
+    .encabezado{flex-direction:column;align-items:stretch;}
+    .encabezado .boton{width:100%;}
+    .avisos{left:12px;right:12px;bottom:12px;max-width:none;}
+    .tarea{padding:14px;}
+    .tarea-acciones{flex-direction:column;}
+  }
+</style>
+</head>
+<body>
+
+<div class="contenedor">
+
+  <!-- ENCABEZADO -->
+  <header class="encabezado">
+    <div class="marca">
+      <div class="logo">✅</div>
+      <div>
+        <h1>TareaLista</h1>
+        <p>Organiza, programa y recibe recordatorios</p>
+      </div>
+    </div>
+    <button id="btn-permiso" class="boton boton-secundario" type="button">🔔 Activar recordatorios</button>
+  </header>
+
+  <!-- FORMULARIO -->
+  <section class="tarjeta">
+    <p class="tarjeta-titulo" id="titulo-formulario">Nueva tarea</p>
+    <form id="formulario" class="formulario" autocomplete="off">
+      <div class="campo campo-ancho">
+        <label for="titulo">Título de la tarea</label>
+        <input type="text" id="titulo" placeholder="Ej.: Enviar el informe mensual" maxlength="120" required>
+      </div>
+
+      <div class="campo campo-ancho">
+        <label for="descripcion">Descripción (opcional)</label>
+        <textarea id="descripcion" placeholder="Detalles adicionales de la tarea..." maxlength="300"></textarea>
+      </div>
+
+      <div class="campo">
+        <label for="fecha">Fecha y hora de vencimiento</label>
+        <input type="datetime-local" id="fecha">
+      </div>
+
+      <div class="campo">
+        <label for="prioridad">Prioridad</label>
+        <select id="prioridad">
+          <option value="alta">Alta</option>
+          <option value="media" selected>Media</option>
+          <option value="baja">Baja</option>
+        </select>
+      </div>
+
+      <div class="campo campo-ancho acciones-formulario">
+        <button type="submit" class="boton boton-primario" id="btn-guardar">➕ Agregar tarea</button>
+        <button type="button" class="boton boton-secundario oculto" id="btn-cancelar">Cancelar edición</button>
+      </div>
+    </form>
+  </section>
+
+  <!-- ESTADÍSTICAS -->
+  <section class="estadisticas">
+    <div class="stat"><strong id="stat-total">0</strong><span>Totales</span></div>
+    <div class="stat"><strong id="stat-pendientes">0</strong><span>Pendientes</span></div>
+    <div class="stat"><strong id="stat-vencidas">0</strong><span>Vencidas</span></div>
+    <div class="stat"><strong id="stat-completadas">0</strong><span>Completadas</span></div>
+  </section>
+
+  <!-- FILTROS -->
+  <div class="filtros" id="filtros">
+    <button class="filtro activo" data-filtro="todas" type="button">Todas</button>
+    <button class="filtro" data-filtro="pendientes" type="button">Pendientes</button>
+    <button class="filtro" data-filtro="hoy" type="button">Para hoy</button>
+    <button class="filtro" data-filtro="vencidas" type="button">Vencidas</button>
+    <button class="filtro" data-filtro="completadas" type="button">Completadas</button>
+  </div>
+
+  <!-- LISTA -->
+  <div id="lista"></div>
+
+  <!-- PIE -->
+  <footer class="pie">
+    <strong>TareaLista</strong> — Tu agenda inteligente. Los datos se guardan solo en este dispositivo.
+  </footer>
+
+</div>
+
+<!-- CONTENEDOR DE AVISOS FLOTANTES -->
+<div id="avisos" class="avisos"></div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* =========================================================
+     CONSTANTES Y ESTADO
+     ========================================================= */
+  const NOMBRE_APP     = 'TareaLista';
+  const CLAVE_ALMACEN  = 'tarealista.v1';
+  const ICONO_APP = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">' +
+    '<rect width="100" height="100" rx="24" fill="#4f46e5"/>' +
+    '<path d="M28 52l14 14 30-30" fill="none" stroke="#ffffff" stroke-width="10" ' +
+    'stroke-linecap="round" stroke-linejoin="round"/></svg>'
+  );
+
+  let tareas = [];
+  let filtroActual = 'todas';
+  let idEdicion = null;
+  let contextoAudio = null;
+
+  /* =========================================================
+     REFERENCIAS AL DOM
+     ========================================================= */
+  const formulario      = document.getElementById('formulario');
+  const campoTitulo     = document.getElementById('titulo');
+  const campoDesc       = document.getElementById('descripcion');
+  const campoFecha      = document.getElementById('fecha');
+  const campoPrioridad  = document.getElementById('prioridad');
+  const btnGuardar      = document.getElementById('btn-guardar');
+  const btnCancelar     = document.getElementById('btn-cancelar');
+  const btnPermiso      = document.getElementById('btn-permiso');
+  const tituloFormulario= document.getElementById('titulo-formulario');
+  const contenedorLista = document.getElementById('lista');
+  const contenedorAvisos= document.getElementById('avisos');
+
+  /* =========================================================
+     UTILIDADES GENERALES
+     ========================================================= */
+  function generarId() {
+    return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  }
+
+  function escapar(texto) {
+    return String(texto).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  function esFechaValida(valor) {
+    if (!valor) return false;
+    const d = new Date(valor);
+    return !isNaN(d.getTime());
+  }
+
+  function tiempoDe(valor) {
+    const d = new Date(valor);
+    return isNaN(d.getTime()) ? Infinity : d.getTime();
+  }
+
+  /* =========================================================
+     SONIDO (Web Audio API, sin archivos externos)
+     ========================================================= */
+  function obtenerContextoAudio() {
+    if (!contextoAudio) {
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx) return null;
+      contextoAudio = new Ctx();
+    }
+    if (contextoAudio.state === 'suspended') {
+      contextoAudio.resume();
+    }
+    return contextoAudio;
+  }
+
+  function reproducirTono(frecuencia, retardo, duracion, volumen, tipo) {
+    const ctx = obtenerContextoAudio();
+    if (!ctx) return;
+    const osc = ctx.createOscillator();
+    const gan = ctx.createGain();
+    osc.type = tipo || 'sine';
+    osc.frequency.value = frecuencia;
+    osc.connect(gan);
+    gan.connect(ctx.destination);
+    const inicio = ctx.currentTime + retardo;
+    gan.gain.setValueAtTime(0.0001, inicio);
+    gan.gain.linearRampToValueAtTime(volumen || 0.18, inicio + 0.02);
+    gan.gain.exponentialRampToValueAtTime(0.0001, inicio + duracion);
+    osc.start(inicio);
+    osc.stop(inicio + duracion + 0.05);
+  }
+
+  /** Alarma fuerte: tres tonos ascendentes */
+  function sonarAlerta() {
+    reproducirTono(880.00, 0.00, 0.20, 0.22, 'sine');
+    reproducirTono(1174.66, 0.22, 0.20, 0.22, 'sine');
+    reproducirTono(1567.98, 0.44, 0.38, 0.24, 'sine');
+  }
+
+  /** Sonido suave al completar una tarea */
+  function sonidoExito() {
+    reproducirTono(659.25, 0.00, 0.12, 0.14, 'sine');
+    reproducirTono(987.77, 0.10, 0.18, 0.14, 'sine');
+  }
+
+  /* =========================================================
+     VIBRACIÓN
+     ========================================================= */
+  function vibrar(patron) {
+    if ('vibrate' in navigator) {
+      try { navigator.vibrate(patron || [300, 150, 300, 150, 500]); } catch (e) { /* ignorar */ }
+    }
+  }
+
+  /* =========================================================
+     NOTIFICACIONES DEL NAVEGADOR
+     ========================================================= */
+  function mostrarNotificacion(tarea) {
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+    try {
+      const notificacion = new Notification('⏰ TareaLista — ' + tarea.titulo, {
+        body: tarea.descripcion || 'Tu tarea ha llegado a su hora de vencimiento.',
+        icon: ICONO_APP,
+        badge: ICONO_APP,
+        tag: 'tarea-' + tarea.id,
+        requireInteraction: false
+      });
+      notificacion.onclick = function () {
+        window.focus();
+        notificacion.close();
+      };
+    } catch (e) { /* ignorar */ }
+  }
+
+  function actualizarBotonPermiso() {
+    if (!('Notification' in window)) {
+      btnPermiso.textContent = '🔕 Sin soporte de notificaciones';
+      btnPermiso.disabled = true;
+      return;
+    }
+    btnPermiso.classList.remove('activo', 'bloqueado');
+    if (Notification.permission === 'granted') {
+      btnPermiso.textContent = '🔔 Recordatorios activados · Probar';
+      btnPermiso.classList.add('activo');
+    } else if (Notification.permission === 'denied') {
+      btnPermiso.textContent = '🔕 Notificaciones bloqueadas';
+      btnPermiso.classList.add('bloqueado');
+    } else {
+      btnPermiso.textContent = '🔔 Activar recordatorios';
+    }
+  }
+
+  /* =========================================================
+     AVISOS FLOTANTES EN PANTALLA
+     ========================================================= */
+  function mostrarAviso(titulo, texto) {
+    const aviso = document.createElement('div');
+    aviso.className = 'aviso';
+    aviso.innerHTML = '<strong>' + escapar(titulo) + '</strong><span>' + escapar(texto) + '</span>';
+    contenedorAvisos.appendChild(aviso);
+
+    const cerrar = function () {
+      if (!aviso.parentNode) return;
+      aviso.classList.add('saliendo');
+      setTimeout(function () { if (aviso.parentNode) aviso.remove(); }, 380);
+    };
+    aviso.addEventListener('click', cerrar);
+    setTimeout(cerrar, 9000);
+  }
+
+  /** Dispara todos los avisos de una tarea (notificación + sonido + vibración + aviso en pantalla) */
+  function dispararAviso(tarea) {
+    mostrarNotificacion(tarea);
+    sonarAlerta();
+    vibrar([350, 180, 350, 180, 600]);
+    mostrarAviso('⏰ ' + tarea.titulo, tarea.descripcion || 'Es hora de completar esta tarea.');
+  }
+
+  /* =========================================================
+     ALMACENAMIENTO
+     ========================================================= */
+  function cargarTareas() {
+    try {
+      const datos = JSON.parse(localStorage.getItem(CLAVE_ALMACEN));
+      if (Array.isArray(datos)) {
+        tareas = datos
+          .filter(function (t) { return t && typeof t.titulo === 'string'; })
+          .map(function (t) {
+            return {
+              id: t.id || generarId(),
+              titulo: String(t.titulo),
+              descripcion: t.descripcion ? String(t.descripcion) : '',
+              fecha: t.fecha || '',
+              prioridad: ['alta', 'media', 'baja'].indexOf(t.prioridad) !== -1 ? t.prioridad : 'media',
+              completada: !!t.completada,
+              recordado: !!t.recordado,
+              creada: t.creada || Date.now()
+            };
+          });
+      }
+    } catch (e) {
+      tareas = [];
+    }
+  }
+
+  function guardarTareas() {
+    try {
+      localStorage.setItem(CLAVE_ALMACEN, JSON.stringify(tareas));
+    } catch (e) { /* almacenamiento lleno o no disponible */ }
+  }
+
+  /* =========================================================
+     FORMATO DE FECHAS EN ESPAÑOL
+     ========================================================= */
+  const DIAS  = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+  const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+
+  function formatearFecha(valor) {
+    const d = new Date(valor);
+    if (isNaN(d.getTime())) return String(valor);
+    const dia  = String(d.getDate()).padStart(2, '0');
+    const mes  = MESES[d.getMonth()];
+    const anio = d.getFullYear();
+    const hh   = String(d.getHours()).padStart(2, '0');
+    const mm   = String(d.getMinutes()).padStart(2, '0');
+    return DIAS[d.getDay()] + ', ' + dia + ' ' + mes + ' ' + anio + ' · ' + hh + ':' + mm;
+  }
+
+  function esMismoDia(a, b) {
+    return a.getFullYear() === b.getFullYear() &&
+           a.getMonth()    === b.getMonth()    &&
+           a.getDate()     === b.getDate();
+  }
+
+  function textoVencimiento(t) {
+    const objetivo = tiempoDe(t.fecha);
+    if (objetivo === Infinity) return '';
+    const diferencia = objetivo - Date.now();
+    const pasado  = diferencia < 0;
+    const absoluto = Math.abs(diferencia);
+
+    const minutos = Math.floor(absoluto / 60000);
+    const horas   = Math.floor(absoluto / 3600000);
+    const dias    = Math.floor(absoluto / 86400000);
+
+    if (minutos < 1) return pasado ? 'Vencida ahora mismo' : 'Vence ahora mismo';
+
+    let cantidad;
+    if (minutos < 60) {
+      cantidad = minutos + ' min';
+    } else if (horas < 24) {
+      cantidad = horas + ' h';
+    } else {
+      cantidad = dias + (dias === 1 ? ' día' : ' días');
+    }
+    return pasado ? 'Vencida hace ' + cantidad : 'Faltan ' + cantidad;
+  }
+
+  function etiquetaPrioridad(p) {
+    if (p === 'alta') return 'Prioridad alta';
+    if (p === 'baja') return 'Prioridad baja';
+    return 'Prioridad media';
+  }
+
+  /* =========================================================
+     FILTRADO Y ORDEN
+     ========================================================= */
+  function coincideFiltro(t) {
+    const ahora = Date.now();
+    switch (filtroActual) {
+      case 'pendientes':  return !t.completada;
+      case 'completadas': return t.completada;
+      case 'hoy':
+        return !t.completada && esFechaValida(t.fecha) && esMismoDia(new Date(t.fecha), new Date());
+      case 'vencidas':
+        return !t.completada && esFechaValida(t.fecha) && tiempoDe(t.fecha) < ahora;
+      default: return true;
+    }
+  }
+
+  function ordenarTareas(a, b) {
+    if (a.completada !== b.completada) return a.completada ? 1 : -1;
+    const fa = tiempoDe(a.fecha);
+    const fb = tiempoDe(b.fecha);
+    if (fa !== fb) return fa - fb;
+    return b.creada - a.creada;
+  }
+
+  /* =========================================================
+     RENDERIZADO
+     ========================================================= */
+  function plantillaTarea(t) {
+    const ahora   = Date.now();
+    const vencida = !t.completada && esFechaValida(t.fecha) && tiempoDe(t.fecha) < ahora;
+
+    const clases = ['tarea', 'prioridad-' + t.prioridad];
+    if (t.completada) clases.push('completada');
+    if (vencida)      clases.push('vencida');
+
+    let meta = '';
+    if (t.fecha) {
+      meta += '<span class="etiqueta ' + (vencida ? 'etiqueta-vencida' : 'etiqueta-fecha') + '">📅 ' +
+              escapar(formatearFecha(t.fecha)) + '</span>';
+      meta += '<span class="etiqueta ' + (vencida ? 'etiqueta-vencida' : 'etiqueta-relativa') + '">' +
+              escapar(textoVencimiento(t)) + '</span>';
+    } else {
+      meta += '<span class="etiqueta">Sin fecha límite</span>';
+    }
+    meta += '<span class="etiqueta p-' + escapar(t.prioridad) + '">' +
+            escapar(etiquetaPrioridad(t.prioridad)) + '</span>';
+
+    return '' +
+      '<article class="' + clases.join(' ') + '" data-id="' + escapar(t.id) + '">' +
+        '<button class="boton-check" type="button" data-accion="alternar" ' +
+          'title="' + (t.completada ? 'Marcar como pendiente' : 'Marcar como completada') + '" ' +
+          'aria-label="' + (t.completada ? 'Marcar como pendiente' : 'Marcar como completada') + '">' +
+          (t.completada ? '✓' : '') +
+        '</button>' +
+        '<div class="tarea-cuerpo">' +
+          '<h3 class="tarea-titulo">' + escapar(t.titulo) + '</h3>' +
+          (t.descripcion ? '<p class="tarea-descripcion">' + escapar(t.descripcion) + '</p>' : '') +
+          '<div class="tarea-meta">' + meta + '</div>' +
+        '</div>' +
+        '<div class="tarea-acciones">' +
+          '<button class="boton-icono" type="button" data-accion="editar" title="Editar tarea">✏️</button>' +
+          '<button class="boton-icono" type="button" data-accion="eliminar" title="Eliminar tarea">🗑️</button>' +
+        '</div>' +
+      '</article>';
+  }
+
+  function mensajeVacio() {
+    switch (filtroActual) {
+      case 'pendientes':  return '¡Excelente! No tienes tareas pendientes.';
+      case 'completadas': return 'Todavía no has completado ninguna tarea.';
+      case 'hoy':         return 'No hay tareas programadas para hoy.';
+      case 'vencidas':    return '¡Bien! No tienes tareas vencidas.';
+      default:            return 'Aún no hay tareas en TareaLista. Agrega la primera con el formulario de arriba.';
+    }
+  }
+
+  function render() {
+    const visibles = tareas.filter(coincideFiltro).sort(ordenarTareas);
+
+    if (visibles.length === 0) {
+      contenedorLista.innerHTML =
+        '<div class="vacio"><div class="vacio-icono">📋</div><p>' + escapar(mensajeVacio()) + '</p></div>';
+    } else {
+      contenedorLista.innerHTML = visibles.map(plantillaTarea).join('');
+    }
+
+    actualizarEstadisticas();
+  }
+
+  function actualizarEstadisticas() {
+    const ahora       = Date.now();
+    const total       = tareas.length;
+    const completadas = tareas.filter(function (t) { return t.completada; }).length;
+    const pendientes  = total - completadas;
+    const vencidas    = tareas.filter(function (t) {
+      return !t.completada && esFechaValida(t.fecha) && tiempoDe(t.fecha) < ahora;
+    }).length;
+
+    document.getElementById('stat-total').textContent       = total;
+    document.getElementById('stat-pendientes').textContent  = pendientes;
+    document.getElementById('stat-vencidas').textContent    = vencidas;
+    document.getElementById('stat-completadas').textContent = completadas;
+  }
+
+  /* =========================================================
+     ACCIONES SOBRE TAREAS
+     ========================================================= */
+  function alternarTarea(id) {
+    const t = tareas.find(function (x) { return x.id === id; });
+    if (!t) return;
+
+    t.completada = !t.completada;
+    if (t.completada) {
+      t.recordado = true;   // ya no vuelve a sonar
+      sonidoExito();
+      vibrar([80, 60, 80]);
+    } else {
+      t.recordado = false;  // si vuelve a pendiente, puede recordar otra vez
+    }
+
+    guardarTareas();
+    render();
+  }
+
+  function eliminarTarea(id) {
+    const t = tareas.find(function (x) { return x.id === id; });
+    if (!t) return;
+    if (!confirm('¿Eliminar la tarea "' + t.titulo + '"?')) return;
+
+    tareas = tareas.filter(function (x) { return x.id !== id; });
+    if (idEdicion === id) cancelarEdicion();
+    guardarTareas();
+    render();
+  }
+
+  function editarTarea(id) {
+    const t = tareas.find(function (x) { return x.id === id; });
+    if (!t) return;
+
+    idEdicion = id;
+    campoTitulo.value    = t.titulo;
+    campoDesc.value      = t.descripcion || '';
+    campoFecha.value     = t.fecha || '';
+    campoPrioridad.value = t.prioridad;
+    btnGuardar.textContent = '💾 Guardar cambios';
+    btnCancelar.classList.remove('oculto');
+    tituloFormulario.textContent = 'Editando tarea';
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setTimeout(function () { campoTitulo.focus(); }, 320);
+  }
+
+  function cancelarEdicion() {
+    idEdicion = null;
+    formulario.reset();
+    campoPrioridad.value = 'media';
+    btnGuardar.textContent = '➕ Agregar tarea';
+    btnCancelar.classList.add('oculto');
+    tituloFormulario.textContent = 'Nueva tarea';
+  }
+
+  /* =========================================================
+     COMPROBACIÓN DE RECORDATORIOS
+     ========================================================= */
+  function comprobarRecordatorios() {
+    const ahora = Date.now();
+    let huboAviso = false;
+
+    tareas.forEach(function (t) {
+      if (t.completada || t.recordado || !esFechaValida(t.fecha)) return;
+      if (tiempoDe(t.fecha) <= ahora) {
+        t.recordado = true;
+        huboAviso = true;
+        dispararAviso(t);
+      }
+    });
+
+    if (huboAviso) {
+      guardarTareas();
+      render();
+    }
+  }
+
+  /* =========================================================
+     EVENTOS
+     ========================================================= */
+  formulario.addEventListener('submit', function (evento) {
+    evento.preventDefault();
+
+    const titulo = campoTitulo.value.trim();
+    if (!titulo) {
+      campoTitulo.focus();
+      return;
+    }
+
+    const datos = {
+      titulo: titulo,
+      descripcion: campoDesc.value.trim(),
+      fecha: campoFecha.value || '',
+      prioridad: campoPrioridad.value
+    };
+
+    if (idEdicion) {
+      const t = tareas.find(function (x) { return x.id === idEdicion; });
+      if (t) {
+        t.titulo      = datos.titulo;
+        t.descripcion = datos.descripcion;
+        t.fecha       = datos.fecha;
+        t.prioridad   = datos.prioridad;
+        t.recordado   = false; // se reprograma el recordatorio
+      }
+      cancelarEdicion();
+      mostrarAviso('Tarea actualizada', datos.titulo);
+    } else {
+      tareas.push({
+        id: generarId(),
+        titulo: datos.titulo,
+        descripcion: datos.descripcion,
+        fecha: datos.fecha,
+        prioridad: datos.prioridad,
+        completada: false,
+        recordado: false,
+        creada: Date.now()
+      });
+      formulario.reset();
+      campoPrioridad.value = 'media';
+      mostrarAviso('Tarea agregada', datos.titulo);
+    }
+
+    guardarTareas();
+    render();
+    comprobarRecordatorios();
+    campoTitulo.focus();
+  });
+
+  btnCancelar.addEventListener('click', cancelarEdicion);
+
+  contenedorLista.addEventListener('click', function (evento) {
+    const boton = evento.target.closest('button[data-accion]');
+    if (!boton) return;
+    const articulo = boton.closest('.tarea');
+    if (!articulo) return;
+
+    const id     = articulo.dataset.id;
+    const accion = boton.dataset.accion;
+
+    if (accion === 'alternar')      alternarTarea(id);
+    else if (accion === 'eliminar') eliminarTarea(id);
+    else if (accion === 'editar')   editarTarea(id);
+  });
+
+  document.getElementById('filtros').addEventListener('click', function (evento) {
+    const boton = evento.target.closest('.filtro');
+    if (!boton) return;
+
+    filtroActual = boton.dataset.filtro;
+    Array.prototype.forEach.call(document.querySelectorAll('.filtro'), function (b) {
+      b.classList.remove('activo');
+    });
+    boton.classList.add('activo');
+    render();
+  });
+
+  btnPermiso.addEventListener('click', function () {
+    // Desbloquea el audio con el gesto del usuario
+    obtenerContextoAudio();
+
+    if (!('Notification' in window)) {
+      mostrarAviso('Aviso', 'Tu navegador no admite notificaciones, pero igual verás los avisos en pantalla.');
+      return;
+    }
+
+    if (Notification.permission === 'granted') {
+      // Ya está activado: lanzamos una prueba real
+      dispararAviso({
+        titulo: 'Prueba de recordatorio',
+        descripcion: 'Así se verán y sonarán tus avisos en TareaLista.'
+      });
+      return;
+    }
+
+    if (Notification.permission === 'denied') {
+      mostrarAviso('Notificaciones bloqueadas',
+        'Debes habilitarlas manualmente en los ajustes del navegador para este sitio.');
+      return;
+    }
+
+    Notification.requestPermission().then(function () {
+      actualizarBotonPermiso();
+      if (Notification.permission === 'granted') {
+        mostrarAviso('¡Listo!', 'Los recordatorios de TareaLista están activados.');
+        dispararAviso({
+          titulo: 'Recordatorios activados',
+          descripcion: 'Recibirás avisos con sonido y vibración.'
+        });
+      }
+    }).catch(function () {
+      actualizarBotonPermiso();
+    });
+  });
+
+  // Sincroniza entre pestañas abiertas
+  window.addEventListener('storage', function (evento) {
+    if (evento.key === CLAVE_ALMACEN) {
+      cargarTareas();
+      render();
+    }
+  });
+
+  /* =========================================================
+     INICIO
+     ========================================================= */
+  function iniciar() {
+    cargarTareas();
+    actualizarBotonPermiso();
+    render();
+    comprobarRecordatorios();
+
+    // Revisa recordatorios cada 10 segundos
+    setInterval(comprobarRecordatorios, 10000);
+
+    // Actualiza los textos relativos ("Faltan 5 min") cada 30 segundos
+    setInterval(function () {
+      if (!idEdicion) render();
+    }, 30000);
+  }
+
+  iniciar();
+})();
+</script>
+</body>
+</html>
